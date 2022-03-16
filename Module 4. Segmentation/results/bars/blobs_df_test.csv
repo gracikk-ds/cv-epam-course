@@ -1,0 +1,21 @@
+,Unnamed: 0,filename_old,new_filename,count,predicted
+0,0,Photo (1).JPG,image_1.png,111,125
+1,1,Photo (10).JPG,image_2.png,288,317
+2,2,Photo (112).jpg,image_3.png,359,388
+3,3,Photo (122).jpg,image_4.png,539,605
+4,4,Photo (14).JPG,image_5.png,105,112
+5,5,Photo (162).jpg,image_6.png,396,446
+6,6,Photo (163).jpg,image_7.png,375,433
+7,7,Photo (167).jpg,image_8.png,731,796
+8,8,Photo (174).jpg,image_9.png,495,487
+9,9,Photo (175).jpg,image_10.png,909,950
+10,10,Photo (181).jpg,image_11.png,156,160
+11,11,Photo (183).jpg,image_12.png,1200,1095
+12,12,Photo (194).jpg,image_13.png,134,141
+13,13,Photo (40).jpg,image_14.png,283,284
+14,14,Photo (41).jpg,image_15.png,314,313
+15,15,Photo (67).jpg,image_16.png,393,408
+16,16,Photo (73).jpg,image_17.png,593,588
+17,17,Photo (88).jpg,image_18.png,427,412
+18,18,Photo (94).jpg,image_19.png,471,488
+MAPE,,,,,6%
