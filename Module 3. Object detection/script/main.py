@@ -76,7 +76,7 @@ def train_barcode_detection(
         location="us-central1",
         # Google Cloud Storage bucket in same region as location
         # used to stage artifacts
-        staging_bucket=BUCKET_NAME
+        staging_bucket=BUCKET_NAME,
     )
     print("done!")
 
@@ -134,7 +134,7 @@ def train_barcode_detection(
         "--max_epochs",
         str(max_epochs),
         "--model",
-        model
+        model,
     ]
 
     # >>
@@ -174,9 +174,7 @@ def train_barcode_detection(
     default="gs://my_backet/models/detectors/yolox/yolox_s_8x8_300e_coco.pth",
     required=False,
 )
-@click.option(
-    "--model_description", default="yolox detector", required=True
-)
+@click.option("--model_description", default="yolox detector", required=True)
 @click.option(
     "--experiment_name",
     default="yolox detector experiment",

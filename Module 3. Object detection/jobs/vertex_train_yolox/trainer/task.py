@@ -87,7 +87,9 @@ def main(
             classes = [element["name"] for element in annotations_train["categories"]]
             print(f"number of classes {len(classes)}")
 
-            cfg = Config.fromfile(str(Path(__file__).parent.resolve() / "yolox_small_8x8_300e_coco.py"))
+            cfg = Config.fromfile(
+                str(Path(__file__).parent.resolve() / "yolox_small_8x8_300e_coco.py")
+            )
             cfg.work_dir = str(model_dir_to_use)
             cfg.classes = classes
             cfg.seed = 42

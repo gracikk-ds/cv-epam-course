@@ -4,9 +4,9 @@ import traceback
 import contextlib
 from pathlib import Path
 
-os.environ['LOCAL_RANK'] = "-1"
-os.environ['RANK'] = "-1"
-os.environ['WORLD_SIZE'] = "1"
+os.environ["LOCAL_RANK"] = "-1"
+os.environ["RANK"] = "-1"
+os.environ["WORLD_SIZE"] = "1"
 
 from yolov5 import train, val, detect
 from .cfgs import dataset_yaml_file, hyp_yaml_file
@@ -14,10 +14,10 @@ from .cfgs import dataset_yaml_file, hyp_yaml_file
 GS_PREFIX = "gs://"
 GCSFUSE_PREFIX = "/gcs/"
 
-OPTMIZER = 'Adam'
-MODEL = 'yolov5s'
+OPTMIZER = "Adam"
+MODEL = "yolov5s"
 SIZE = 544
-NAME = f'{MODEL}-dim{SIZE}'
+NAME = f"{MODEL}-dim{SIZE}"
 BATCH = -1
 
 
@@ -53,12 +53,10 @@ def main(dataset_folder: str, max_epochs: int, model: str):
         root_dir=str(model_dir_to_use),
         path_to_train_images=str(dataset_folder_to_use / "images" / "train"),
         path_to_val_images=str(dataset_folder_to_use / "images" / "val"),
-        path_to_test_images=str(dataset_folder_to_use / "images" / "test")
+        path_to_test_images=str(dataset_folder_to_use / "images" / "test"),
     )
 
-    path_to_hyper_yaml = hyp_yaml_file(
-        root_dir=str(model_dir_to_use)
-    )
+    path_to_hyper_yaml = hyp_yaml_file(root_dir=str(model_dir_to_use))
 
     with open(path, "w") as f, open(path_err, "w") as e:
         with contextlib.redirect_stdout(f), contextlib.redirect_stderr(e):
@@ -103,7 +101,7 @@ def main(dataset_folder: str, max_epochs: int, model: str):
                     task="test",
                     project=str(tb_log_dir_to_use),  # save to project/name
                     name=NAME + "/val",
-                    exist_ok=True
+                    exist_ok=True,
                 )
 
                 print("val.run process has finished")
@@ -112,11 +110,11 @@ def main(dataset_folder: str, max_epochs: int, model: str):
                 print("\n", "*" * 50, "\n Start detect.run process:")
                 detect.run(
                     imgsz=SIZE,
-                    source=str(dataset_folder_to_use)+"/images/test",
+                    source=str(dataset_folder_to_use) + "/images/test",
                     weights=f"{str(tb_log_dir_to_use)}/{NAME}/weights/best.pt",
                     project=str(tb_log_dir_to_use),  # save to project/name
                     name=NAME + "/results_visualization",
-                    exist_ok=True
+                    exist_ok=True,
                 )
 
                 print("detect.run process has finished")

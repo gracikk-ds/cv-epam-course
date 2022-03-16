@@ -4,39 +4,36 @@ from pathlib import Path
 
 
 def dataset_yaml_file(
-        root_dir,
-        path_to_train_images,
-        path_to_val_images,
-        path_to_test_images
+    root_dir, path_to_train_images, path_to_val_images, path_to_test_images
 ):
     train_list = [x.as_posix() for x in Path(path_to_train_images).glob("*")]
     valid_list = [x.as_posix() for x in Path(path_to_val_images).glob("*")]
     test_list = [x.as_posix() for x in Path(path_to_test_images).glob("*")]
 
-    with open(os.path.join(root_dir, 'train.txt'), 'w') as f:
+    with open(os.path.join(root_dir, "train.txt"), "w") as f:
         for path in train_list:
-            f.write(path + '\n')
+            f.write(path + "\n")
 
-    with open(os.path.join(root_dir, 'val.txt'), 'w') as f:
+    with open(os.path.join(root_dir, "val.txt"), "w") as f:
         for path in valid_list:
-            f.write(path + '\n')
+            f.write(path + "\n")
 
-    with open(os.path.join(root_dir, 'test.txt'), 'w') as f:
+    with open(os.path.join(root_dir, "test.txt"), "w") as f:
         for path in test_list:
-            f.write(path + '\n')
+            f.write(path + "\n")
 
     data = dict(
         path=root_dir,
-        train=os.path.join(root_dir, 'train.txt'),
-        val=os.path.join(root_dir, 'val.txt'),
-        test=os.path.join(root_dir, 'test.txt'),
+        train=os.path.join(root_dir, "train.txt"),
+        val=os.path.join(root_dir, "val.txt"),
+        test=os.path.join(root_dir, "test.txt"),
         nc=1,
-        names=['barcode'],
+        names=["barcode"],
     )
 
-    path_to_yaml = os.path.join(root_dir, 'gbr.yaml')
+    path_to_yaml = os.path.join(root_dir, "gbr.yaml")
 
-    with open(os.path.join(root_dir, 'gbr.yaml'), 'w') as outfile:
+    with open(os.path.join(root_dir, "gbr.yaml"), "w") as outfile:
         yaml.dump(data, outfile, default_flow_style=False)
 
     return path_to_yaml
@@ -75,9 +72,9 @@ def hyp_yaml_file(root_dir):
         copy_paste=0.0,  # segment copy-paste (probability)
     )
 
-    path_to_hyper_yaml = os.path.join(root_dir, 'hyp.yaml')
+    path_to_hyper_yaml = os.path.join(root_dir, "hyp.yaml")
 
-    with open(path_to_hyper_yaml, 'w') as outfile:
+    with open(path_to_hyper_yaml, "w") as outfile:
         yaml.dump(hyper_params, outfile, default_flow_style=False)
 
     return path_to_hyper_yaml

@@ -9,7 +9,7 @@ REQUIRED_PACKAGES = [
     "click==7.1.2",
     "future==0.18.2",
     "tensorboard",
-    "albumentations"
+    "albumentations",
 ]
 
 setup(
@@ -21,5 +21,5 @@ setup(
     description="MMDet training on Vertex AI",
     author="epam",
     author_email="epam@epam.com",
-    url="https://www.epam.com/"
+    url="https://www.epam.com/",
 )
