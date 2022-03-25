@@ -1,7 +1,7 @@
 import albumentations as albu
 import numpy as np
 from albumentations.pytorch import ToTensorV2
-from albumentations.augmentations import Cutout
+from albumentations.augmentations import CoarseDropout
 
 
 class Transforms:
@@ -17,7 +17,7 @@ class Transforms:
                 albu.GridDistortion(distort_limit=0.6, p=.3),
                 albu.ShiftScaleRotate(border_mode=1, rotate_limit=3, p=.3),
 
-                Cutout(p=.2),  # also implement MixUp augmentations inside train pipeline
+                CoarseDropout(p=.2),  # also implement MixUp augmentations inside train pipeline
 
                 albu.PadIfNeeded(
                     min_height=224 + 5,
