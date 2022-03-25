@@ -145,3 +145,8 @@ cython_debug/
 *.pth
 *.pt
 *.ckpt
+
+# Images
+*.JPG
+*.jpg
+*.png
