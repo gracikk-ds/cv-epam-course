@@ -59,7 +59,7 @@ class EmbeddingsModel(nn.Module):
     ):
         super().__init__()
         self.trunk = timm.create_model(backbone, pretrained=True)
-
+        self.embedding_size = embedding_size
         self.trunk.fc = nn.Linear(
             in_features=self.trunk.fc.in_features,
             out_features=embedding_size,
@@ -104,7 +104,7 @@ class Runner(pl.LightningModule):
             num_classes=len(classes), embedding_size=model.embedding_size
         )
 
-        num_classes = len(self.mapped_classes)
+        num_classes = len(self.classes)
         self.metrics = torch.nn.ModuleDict(
             {
                 "accuracy": Accuracy(
