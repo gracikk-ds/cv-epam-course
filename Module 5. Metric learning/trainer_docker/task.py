@@ -139,20 +139,20 @@ def main(
     trainer.fit(runner, train_dl, val_dl)
 
     # save the model
-    # runner.model.eval()
-    # b = next(iter(val_dl))
-    # traced_model = torch.jit.trace(runner.model, b[0])
-    # meta = {
-    #     "class_names": runner.mapped_classes,
-    #     "inference_params": {
-    #         "image_height": SIZE,
-    #         "image_width": SIZE,
-    #     },
-    # }
-    # traced_model.save(
-    #     str(model_dir_to_use / "torchscript.pt"),
-    #     _extra_files={f"{k}.txt": str(v) for k, v in meta.items()},
-    # )
+    runner.model.eval()
+    b = next(iter(val_dl))
+    traced_model = torch.jit.trace(runner.model, b[0])
+    meta = {
+        "class_names": runner.mapped_classes,
+        "inference_params": {
+            "image_height": SIZE,
+            "image_width": SIZE,
+        },
+    }
+    traced_model.save(
+        str(model_dir_to_use / "torchscript.pt"),
+        _extra_files={f"{k}.txt": str(v) for k, v in meta.items()},
+    )
 
 
 if __name__ == "__main__":
