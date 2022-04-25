@@ -11,11 +11,7 @@ import pytorch_lightning as pl
 from matplotlib import pyplot as plt
 from torch.nn import CrossEntropyLoss
 from torchmetrics import Accuracy, ConfusionMatrix
-from pytorch_metric_learning import losses, miners  # , testers#, samplers  # , reducers
-# from pytorch_metric_learning.utils.accuracy_calculator import (
-#     AccuracyCalculator,
-#     precision_at_k,
-# )
+from pytorch_metric_learning import losses, miners
 
 
 BATCH_SIZE = 32

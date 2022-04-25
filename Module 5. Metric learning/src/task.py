@@ -31,7 +31,6 @@ def main(
         model_dir: str,
         max_epochs: int,
 ):
-    os.makedirs(dataset_folder, exist_ok=True)
     os.makedirs(tb_log_dir, exist_ok=True)
     os.makedirs(model_dir, exist_ok=True)
 

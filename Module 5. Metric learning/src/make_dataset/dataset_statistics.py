@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 
 
 # Main folder
-dataset_folder_to_use = Path("./dataset")
+dataset_folder_to_use = Path("../../dataset")
 
 # pathes to dirs
 TRAIN_DIR = dataset_folder_to_use / 'train'

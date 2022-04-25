@@ -18,7 +18,7 @@ REQUIRED_PACKAGES = [
 ]
 
 setup(
-    name="trainer_docker",
+    name="srcsrc",
     version="0.1",
     install_requires=REQUIRED_PACKAGES,
     packages=find_packages(),

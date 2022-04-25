@@ -7,13 +7,15 @@ from pathlib import Path
 
 @click.command()
 @click.option("--flag", type=str, default="train", required=True,)
-def make_dataset(flag: str):
+@click.option("--root", type=str, default="../../Stanford_Online_Products", required=True,)
+@click.option("--destination", type=str, default="../../dataset", required=True,)
+def make_dataset(flag: str, root: str, destination: str):
     """
     Create Imagefolder dataset from .txt files
     :param flag: one of "train"/"test"
     :return: None
     """
-    root_base = Path("./Stanford_Online_Products")
+    root_base = Path(root)
 
     # determine info file
     if flag == "train":
@@ -29,11 +31,11 @@ def make_dataset(flag: str):
     # make dirs for each category
     categories = set([x.parts[-2] for x in paths])
     for category in categories:
-        os.makedirs("./dataset/" + flag + "/" + category, exist_ok=True)
+        os.makedirs(destination + flag + "/" + category, exist_ok=True)
 
     # copy images
     for path in tqdm(paths):
-        shutil.copy(path, "./dataset/" + flag + "/" + path.parts[-2] + "/" + Path(path).name)
+        shutil.copy(path, destination + flag + "/" + path.parts[-2] + "/" + Path(path).name)
 
 
 if __name__ == "__main__":

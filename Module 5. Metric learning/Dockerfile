@@ -3,21 +3,26 @@ FROM pytorch/pytorch
 RUN pip install -U pip
 RUN pip install poetry
 
+RUN mkdir /training
+
 # copy dataset
-COPY dataset.tar ./dataset.tar
+COPY dataset.tar /training/dataset.tar
 # extract it
-RUN tar -xf dataset.tar && rm dataset.tar
+RUN tar -xf /training/dataset.tar && rm /training/dataset.tar
 
 # copy trainer module
-COPY trainer_docker trainer_docker
+COPY src /training/src
 
 # copy dependencies
-COPY pyproject.toml ./pyproject.toml
+COPY pyproject.toml /training/pyproject.toml
+
+# setting working dir
+WORKDIR /training
+
+RUN poetry config virtualenvs.create false
 RUN poetry install
 
 # setting working dir
-WORKDIR /trainer_docker
-
-EXPOSE 8080
+WORKDIR /training/src
 
 ENTRYPOINT ["python", "task.py"]
