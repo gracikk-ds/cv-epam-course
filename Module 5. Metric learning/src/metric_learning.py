@@ -9,7 +9,7 @@ import torch.nn as nn
 from typing import Tuple
 import pytorch_lightning as pl
 from matplotlib import pyplot as plt
-from torchvision.ops import sigmoid_focal_loss
+from torch.nn import CrossEntropyLoss
 from torchmetrics import Accuracy, ConfusionMatrix
 from pytorch_metric_learning import losses, miners  # , testers#, samplers  # , reducers
 # from pytorch_metric_learning.utils.accuracy_calculator import (
@@ -54,7 +54,7 @@ class EmbeddingsModel(nn.Module):
     def __init__(
         self,
         num_classes: int,
-        embedding_size: int = 1024,
+        embedding_size: int = 512,
         backbone: str = "resnext101_32x8d",
     ):
         super().__init__()
@@ -96,11 +96,11 @@ class Runner(pl.LightningModule):
         self.classes = classes
         self.lr = lr
         self.scheduler_T = scheduler_T
-        self.criterion = sigmoid_focal_loss
+        self.criterion = CrossEntropyLoss()
 
         self.metric_coeff = metric_coeff
         self.miner = miners.MultiSimilarityMiner(epsilon=0.1)
-        self.metric_loss = losses.CosFaceLoss(
+        self.metric_loss = losses.SubCenterArcFaceLoss(
             num_classes=len(classes), embedding_size=model.embedding_size
         )
 
@@ -134,19 +134,15 @@ class Runner(pl.LightningModule):
         hard_pairs = self.miner(embeddings, targets)
         m_loss = self.metric_loss(embeddings, targets, hard_pairs)
 
-        # combining them
-        loss = clf_loss + self.metric_coeff * m_loss
-
         # calculating metrics
         for i, metric in enumerate(self.metrics.values()):
             metric.update(logits.softmax(axis=1), targets)
 
-        self.log("Train/Loss", loss.item(), on_step=True, batch_size=BATCH_SIZE,)
         self.log("Train/Metric Loss", m_loss.item(), on_step=True, batch_size=BATCH_SIZE,)
         self.log("Train/Classification Loss", clf_loss.item(), on_step=True, batch_size=BATCH_SIZE,)
         self.log("Train/LR", self.lr_schedulers().get_last_lr()[0], on_step=True, batch_size=BATCH_SIZE,)
 
-        return loss
+        return m_loss
 
     def validation_step(
             self,

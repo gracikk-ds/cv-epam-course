@@ -117,8 +117,7 @@ def main(
     logger.info("creating trainer!")
     trainer = pl.Trainer(
         max_epochs=max_epochs,
-        # gpus=-1,
-        accelerator="cpu",
+        gpus=-1,
         logger=pl.loggers.tensorboard.TensorBoardLogger(tb_log_dir_to_use),
         callbacks=[
             ModelCheckpoint(
