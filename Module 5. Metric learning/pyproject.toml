@@ -7,19 +7,39 @@ authors = ["gordeev.al <aleksandr_gordeev2@epam.com>"]
 [tool.poetry.dependencies]
 python = "^3.8"
 timm = "0.5.4"
-torch = "1.11.0"
-torchvision = "0.12.0"
-torchmetrics = "0.7.3"
-pytorch-lightning = "1.5.10"
-pytorch-metric-learning = "1.2.1"
 click = "^8.1.2"
 tqdm = "^4.64.0"
-albumentations = "^1.1.0"
-tensorboard = "^2.8.0"
+torch = "1.11.0"
 future = "0.18.2"
+pillow = "^8.0.0"
 seaborn = "0.11.2"
+faiss-gpu = "1.7.2"
+umap-learn = "0.5.3"
+tensorboard = "^2.8.0"
+torchvision = "0.12.0"
+torchmetrics = "0.7.3"
+albumentations = "^1.1.0"
+pytorch-lightning = "1.5.10"
+pytorch-metric-learning = "1.2.1"
 
 [tool.poetry.dev-dependencies]
+
+[tool.black]
+line-length = 88
+target-version = ['py36', 'py37', 'py38']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # The following are specific to Black, you probably don't want those.
+  | blib2to3
+  | tests/data
+  | profiling
+)/
+'''
+# We use preview style for formatting Black itself. If you
+# want stable formatting across releases, you should keep
+# this off.
+preview = true
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
