@@ -5,16 +5,26 @@ RUN pip install poetry
 
 RUN mkdir /training
 
-# copy dataset
-COPY dataset.tar /training/dataset.tar
+# copy processed data
+COPY data/processed/dataset.tar /training/data/processed/dataset.tar
+
 # extract it
-RUN tar -xf /training/dataset.tar && rm /training/dataset.tar
+RUN mkdir /training/data/processed/dataset
+RUN tar -xf /training/data/processed/dataset.tar -C /training/data/processed/dataset --strip-components 1
+RUN rm /training/data/processed/dataset.tar
+
+# copy model folder
+COPY models /training/models
+
+# copy logs folder
+COPY logs /training/logs
 
 # copy trainer module
 COPY src /training/src
 
 # copy dependencies
 COPY pyproject.toml /training/pyproject.toml
+# COPY poetry.lock /training/poetry.lock
 
 # setting working dir
 WORKDIR /training

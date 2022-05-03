@@ -6,12 +6,27 @@ from pathlib import Path
 
 
 @click.command()
-@click.option("--flag", type=str, default="train", required=True,)
-@click.option("--root", type=str, default="../../Stanford_Online_Products", required=True,)
-@click.option("--destination", type=str, default="../../dataset", required=True,)
+@click.option(
+    "--flag",
+    type=str,
+    default="train",
+    required=True,
+)
+@click.option(
+    "--root",
+    type=str,
+    default="../data/raw/Stanford_Online_Products",
+    required=True,
+)
+@click.option(
+    "--destination",
+    type=str,
+    default="../data/processed",
+    required=True,
+)
 def make_dataset(flag: str, root: str, destination: str):
     """
-    Create Imagefolder dataset from .txt files
+    Create Imagefolder processed from .txt files
     :param flag: one of "train"/"test"
     :return: None
     """
@@ -35,7 +50,9 @@ def make_dataset(flag: str, root: str, destination: str):
 
     # copy images
     for path in tqdm(paths):
-        shutil.copy(path, destination + flag + "/" + path.parts[-2] + "/" + Path(path).name)
+        shutil.copy(
+            path, destination + flag + "/" + path.parts[-2] + "/" + Path(path).name
+        )
 
 
 if __name__ == "__main__":
