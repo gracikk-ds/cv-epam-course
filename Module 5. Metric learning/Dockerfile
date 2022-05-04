@@ -24,7 +24,7 @@ COPY src /training/src
 
 # copy dependencies
 COPY pyproject.toml /training/pyproject.toml
-# COPY poetry.lock /training/poetry.lock
+COPY poetry.lock /training/poetry.lock
 
 # setting working dir
 WORKDIR /training
