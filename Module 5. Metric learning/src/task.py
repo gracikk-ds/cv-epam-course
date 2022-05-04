@@ -56,7 +56,7 @@ def main(
         filemode="a",
         format="%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s",
         datefmt="%H:%M:%S",
-        level=logging.DEBUG,
+        level=logging.INFO,
     )
 
     logger = logging.getLogger("metric_learning_logs")
@@ -110,7 +110,7 @@ def main(
                 BATCH_SIZE,
                 pin_memory=False,
                 sampler=sampler,
-                num_workers=8,
+                num_workers=1,
                 drop_last=True,
             )
 
@@ -119,7 +119,7 @@ def main(
                 BATCH_SIZE,
                 pin_memory=False,
                 shuffle=False,
-                num_workers=4,
+                num_workers=1,
                 drop_last=False,
             )
             logger.info("data loaders were created")
@@ -182,7 +182,7 @@ def main(
         BATCH_SIZE,
         shuffle=False,
         pin_memory=False,
-        num_workers=4,
+        num_workers=1,
         drop_last=False,
     )
 
