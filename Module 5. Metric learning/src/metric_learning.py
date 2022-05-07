@@ -117,7 +117,7 @@ class Runner(pl.LightningModule):
                 ),
             }
         )
-        self.accuracy_calculator = AccuracyCalculator()
+        self.accuracy_calculator = AccuracyCalculator(device=torch.device("cpu"))
 
         self.embeddings_train = []
         self.embeddings_val = []
@@ -230,8 +230,8 @@ class Runner(pl.LightningModule):
         plot_df["target"] = targets
         plot_df["target"] = plot_df["target"].apply(lambda x: self.mapper[x])
 
-        fig = plt.figure(figsize=(14, 10))
-        plt.title(f"UMAP")
+        plt.figure(figsize=(14, 10))
+        plt.title("UMAP")
         sns.scatterplot(x="x", y="y", data=plot_df, hue="target", palette="Paired")
 
         buf = io.BytesIO()
