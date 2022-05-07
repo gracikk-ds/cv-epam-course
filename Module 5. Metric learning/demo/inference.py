@@ -1,9 +1,11 @@
 import pickle
+import torch
 import numpy as np
 import pandas as pd
 from typing import List
 from dynaconf import settings
 from PIL import Image, ImageOps
+from model import transformation
 from pymilvus import connections
 
 
@@ -31,10 +33,15 @@ def process_the_image(image_loader):
 
 
 def predict(image):
+    model = torch.jit.load("../models/torchscript.pt")
 
-    print(image.shape)
+    image = transformation(img=image)
+    image = image[np.newaxis, ...]
 
-    embedding = "great class"
+    model.eval()
+    with torch.no_grad():
+        _, embedding = model(image.float())
+        embedding = embedding.squeeze().numpy()
 
     return embedding
 
@@ -43,7 +50,7 @@ def milvus_search(
     embeddings: List[List[float]],
     host: str = HOST_MILVUS,
     port: str = PORT_MILVUS,
-    collection_name: str = "embeddings",
+    collection_name: str = "demo_metric",
 ):
     connection = connections.connect(host=host, port=port)
 
@@ -83,7 +90,6 @@ def milvus_search(
             maping_df.iloc[np.array(result_ids).T[i]].reset_index().loc[:, ["label_id"]]
         )
         concat_df = pd.concat([concat_df, df], axis=1)
-
     concat_df["result"] = concat_df.mode(axis=1)[0].values.astype(int)
     predictions_label_id = concat_df.loc[:, "result"].values.astype(int)
     indexes = [
@@ -95,8 +101,8 @@ def milvus_search(
 
     with open("./pickles/mapper_faces.pickle", "rb") as handle:
         mapper_dict = pickle.load(handle)
-
-    if dist_mean <= 1:
+    print(dist_mean)
+    if dist_mean <= 2:
 
         predictions = [
             remap_it(class_id, mapper_dict, decode=True)
