@@ -1,7 +1,6 @@
 import numpy as np
 import albumentations as albu
 from albumentations.pytorch import ToTensorV2
-from albumentations.augmentations import CoarseDropout
 
 
 class Transforms:
