@@ -30,7 +30,7 @@ def transformation(img):
 class EmbeddingsModel(nn.Module):
     def __init__(
         self,
-        num_classes: int,
+        num_classes: int = 12,
         embedding_size: int = 512,
         backbone: str = "resnext101_32x8d",
     ):
