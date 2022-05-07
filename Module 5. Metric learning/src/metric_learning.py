@@ -2,9 +2,6 @@ import io
 import timm
 import umap
 import torch
-
-# import random
-
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -21,35 +18,6 @@ from pytorch_metric_learning.utils.accuracy_calculator import AccuracyCalculator
 
 
 BATCH_SIZE = 32
-
-
-# class Augmentation(object):
-#     def __init__(self, images, targets):
-#         self.images = images
-#         self.targets = targets
-#
-#     def cutmix_aug(self):
-#         # https://github.com/clovaai/CutMix-PyTorch/blob/master/train.py
-#         images, targets = self.images, self.targets
-#         return images, targets
-#
-#     def mixup_aug(self):
-#         # https://towardsdatascience.com/enhancing-neural-networks-with-mixup-in-pytorch-5129d261bc4a
-#         # https://github.com/facebookresearch/mixup-cifar10
-#         images, targets = self.images, self.targets
-#         return images, targets
-#
-#     def get_aug(self):
-#         # OneOf implementation, p=.5
-#         value = random.randint(1, 2)
-#
-#         if value == 1:
-#             # run MixUp aug
-#             images, targets = self.mixup_aug()
-#         else:
-#             # run CutMix aug
-#             images, targets = self.cutmix_aug()
-#         return images, targets
 
 
 class EmbeddingsModel(nn.Module):
@@ -136,7 +104,6 @@ class Runner(pl.LightningModule):
     ) -> torch.Tensor:
 
         images, targets = batch
-        # images, targets = Augmentation(images, targets).get_aug()
 
         logits, embeddings = self.model(images)
 

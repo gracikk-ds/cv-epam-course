@@ -14,8 +14,6 @@ class Transforms:
                 # geometric transformations
                 albu.GridDistortion(distort_limit=0.6, p=0.3),
                 albu.ShiftScaleRotate(border_mode=1, rotate_limit=3, p=0.3),
-                # also implement MixUp augmentations inside train pipeline
-                # CoarseDropout(p=0.2),
                 albu.PadIfNeeded(
                     min_height=224 + 5,
                     min_width=224 + 5,
