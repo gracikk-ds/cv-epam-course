@@ -199,6 +199,10 @@ class Runner(pl.LightningModule):
         plot_df["target"] = targets
         plot_df["target"] = plot_df["target"].apply(lambda x: self.mapper[x])
 
+        plot_df = plot_df.groupby("target", group_keys=False).apply(
+            lambda x: x.sample(min(len(x), 50), random_state=42)
+        )
+
         plt.figure(figsize=(14, 10))
         plt.title("UMAP")
         sns.scatterplot(x="x", y="y", data=plot_df, hue="target", palette="Paired")
