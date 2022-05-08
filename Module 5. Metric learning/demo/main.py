@@ -98,10 +98,8 @@ def run():
         start = time.process_time()
 
         embedding = predict(image)
-        result = milvus_search([embedding])
-        img_path = [
-            x for x in Path("../data/interim/dataset_part/train/" + result[0]).glob("*")
-        ][0]
+        result, path = milvus_search([embedding])
+        img_path = Path("../data/interim/dataset_part/train/") / result[0] / path
         img = np.array(Image.open(img_path))
         fig = draw_objects(image, img, result[0])
         st.pyplot(fig=fig)

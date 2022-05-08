@@ -43,7 +43,12 @@ def predict(image):
         _, embedding = model(image.float())
         embedding = embedding.squeeze().numpy()
 
-    return embedding
+    with open("./pickles/normalizer.pickle", "rb") as handle:
+        scaler = pickle.load(handle)
+
+    embedding = scaler.transform([embedding])
+
+    return embedding[0]
 
 
 def milvus_search(
@@ -84,6 +89,10 @@ def milvus_search(
     result_ids = [element.ids for element in results]
     result_dsts_top = [element.distances for element in results]
 
+    pathes = pd.read_csv("./pickles/data_pathes.csv")
+    pathes = pathes.iloc[result_ids[0]]
+    print(pathes)
+
     concat_df = pd.DataFrame(index=range(len(np.array(result_ids).T[0])))
     for i in range(len(np.array(result_ids).T)):
         df = (
@@ -108,8 +117,9 @@ def milvus_search(
             remap_it(class_id, mapper_dict, decode=True)
             for class_id in predictions_label_id
         ]
+        pathes = pathes.loc[pathes["classes_names"] == predictions[0], "paths"].values
 
     else:
         predictions = ["unknown"]
 
-    return predictions
+    return predictions, pathes[0]
