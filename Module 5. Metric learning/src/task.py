@@ -110,7 +110,7 @@ def main(
                 BATCH_SIZE,
                 pin_memory=False,
                 sampler=sampler,
-                num_workers=1,
+                num_workers=12,
                 drop_last=True,
             )
 
@@ -119,7 +119,7 @@ def main(
                 BATCH_SIZE,
                 pin_memory=False,
                 shuffle=False,
-                num_workers=1,
+                num_workers=12,
                 drop_last=False,
             )
             logger.info("data loaders were created")
@@ -133,7 +133,7 @@ def main(
                 ),
                 classes=train_dataset.classes,
                 lr=1e-3,
-                scheduler_T=max_epochs * len(train_dl),
+                scheduler_T=max_epochs,  # * len(train_dl),
                 mapper=mapper,
             )
             logger.info("runner was created")

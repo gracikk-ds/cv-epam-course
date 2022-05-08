@@ -150,8 +150,8 @@ class Runner(pl.LightningModule):
 
         images, targets = batch
         logits, embeddings = self.model(images)
-        self.embeddings_val.append(embeddings)
-        self.targets_val.append(targets)
+        self.embeddings_val.append(embeddings.detach().cpu())
+        self.targets_val.append(targets.detach().cpu())
 
         clf_loss = self.criterion(logits, targets)
 
@@ -168,6 +168,7 @@ class Runner(pl.LightningModule):
         return clf_loss
 
     def log_cm(self, confusion_matrix):
+        print("start drawing conf matrix")
         plt.figure(figsize=(50, 50))
         sns.heatmap(
             np.around(confusion_matrix.cpu().numpy(), 3),
@@ -185,23 +186,35 @@ class Runner(pl.LightningModule):
         self.logger.experiment.add_image(
             "conf_matr", image, self.current_epoch, dataformats="HWC"
         )
+        print("done!")
 
     def log_umap(self, embeddings, targets):
+        print("run umap logger")
         sns.set(style="whitegrid", font_scale=1.3)
 
+        print("     run StandardScaler")
         scaler = StandardScaler()
         embeddings_scaled = scaler.fit_transform(embeddings)
+        print("     done!")
 
+        print("     down-sample number of obj-s")
+        plot_df = pd.DataFrame.from_records(data=embeddings_scaled)
+        plot_df["target"] = targets
+        plot_df = plot_df.groupby("target", group_keys=False).apply(
+            lambda x: x.sample(min(len(x), 50), random_state=42)
+        )
+        plot_df.drop(columns=["target"], inplace=True)
+        print(plot_df.head())
+        print("     done!")
+
+        print("     starting umap transforms")
         umap_obj = umap.UMAP(n_neighbors=20, min_dist=0.15)
-        embedding_2d = umap_obj.fit_transform(embeddings_scaled)
+        embedding_2d = umap_obj.fit_transform(plot_df.values)
+        print("     done!")
 
         plot_df = pd.DataFrame.from_records(data=embedding_2d, columns=["x", "y"])
         plot_df["target"] = targets
         plot_df["target"] = plot_df["target"].apply(lambda x: self.mapper[x])
-
-        plot_df = plot_df.groupby("target", group_keys=False).apply(
-            lambda x: x.sample(min(len(x), 50), random_state=42)
-        )
 
         plt.figure(figsize=(14, 10))
         plt.title("UMAP")
@@ -216,6 +229,7 @@ class Runner(pl.LightningModule):
         self.logger.experiment.add_image(
             "umap", image, self.current_epoch, dataformats="HWC"
         )
+        print("done!")
 
     def validation_epoch_end(self, outputs) -> None:
 
@@ -224,8 +238,12 @@ class Runner(pl.LightningModule):
             self.targets_train = torch.concat(self.targets_train)
             self.embeddings_val = torch.concat(self.embeddings_val)
             self.targets_val = torch.concat(self.targets_val)
+            print("embedding example", self.embeddings_train[0])
+            print("embeddings train shape: ", self.embeddings_train.shape)
+            print("embeddings train shape: ", self.embeddings_val.shape)
 
             # embeddings metrices
+            print("accuracy_calculator start")
             accuracies = self.accuracy_calculator.get_accuracy(
                 self.embeddings_train,
                 self.embeddings_val,
@@ -233,6 +251,7 @@ class Runner(pl.LightningModule):
                 self.targets_val,
                 False,
             )
+            print("done!")
 
             for name in accuracies:
                 self.log(
@@ -240,8 +259,8 @@ class Runner(pl.LightningModule):
                 )
 
             self.log_umap(
-                embeddings=self.embeddings_val.cpu().numpy(),
-                targets=self.targets_val.cpu().numpy(),
+                embeddings=self.embeddings_val.numpy(),
+                targets=self.targets_val.numpy(),
             )
 
             self.embeddings_train = []
