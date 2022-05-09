@@ -12,7 +12,13 @@ More details about camera models and calibration:
 http://web.stanford.edu/class/cs231a/course_notes/01-camera-models.pdf
 
 ###  Homework:
+Task 1.
 Pan-sharpening 2 images with geometric transformations:  
 - Align rotated images (e.g. find homography)  
 - Resize aligned images  
 - Restore color information (e.g. using HSV). 
+  
+Task 2.
+Pose estimation
+- Calibrate your smartphone camera
+- Reproduce pose estimation tutorial with calibrated camera (https://docs.opencv.org/4.5.0/d7/d53/tutorial_py_pose.html)
