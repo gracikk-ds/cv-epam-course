@@ -203,6 +203,7 @@ class Runner(pl.LightningModule):
         plot_df = plot_df.groupby("target", group_keys=False).apply(
             lambda x: x.sample(min(len(x), 50), random_state=42)
         )
+        targets = plot_df["target"].values
         plot_df.drop(columns=["target"], inplace=True)
         print(plot_df.head())
         print("     done!")
@@ -240,7 +241,7 @@ class Runner(pl.LightningModule):
             self.targets_val = torch.concat(self.targets_val)
             print("embedding example", self.embeddings_train[0])
             print("embeddings train shape: ", self.embeddings_train.shape)
-            print("embeddings train shape: ", self.embeddings_val.shape)
+            print("embeddings val shape: ", self.embeddings_val.shape)
 
             # embeddings metrices
             print("accuracy_calculator start")
