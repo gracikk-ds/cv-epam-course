@@ -1,7 +1,6 @@
 ### CV course
 The course includes 7 modules which cover the essential problems of Computer Vision Sphere.
-
-### Agenda
+  
 Module 1: [Image processing](https://github.com/gracikk-ds/cv-epam-course/tree/main/Module%201.%20Image%20processing)  
 Module 2: [Image classification](https://github.com/gracikk-ds/cv-epam-course/tree/main/Module%202.%20Image%20classification)  
 Module 3: [Object detection](https://github.com/gracikk-ds/cv-epam-course/tree/main/Module%203.%20Object%20detection)  
