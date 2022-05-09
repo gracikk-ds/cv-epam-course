@@ -1,4 +1,4 @@
-## CV course
+### CV course
 The course includes 7 modules which cover the essential problems of Computer Vision Sphere.
 
 ### Agenda
