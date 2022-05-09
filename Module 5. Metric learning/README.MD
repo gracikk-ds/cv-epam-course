@@ -1,4 +1,11 @@
 # Metric Learning
+
+###  Main things to know:  
+- [Lecture 1](https://www.youtube.com/watch?v=aU9yEwgrJ54) - highly recommended
+- [Lecture 2](https://www.youtube.com/watch?v=bvcC4hXaIJY)
+- [Lecture 3](https://www.youtube.com/watch?v=mr9njs6dess)
+- (Pytorch metric learning framework)[https://kevinmusgrave.github.io/pytorch-metric-learning/] - highly recommended
+
 ## Task
 Build a system which can find a visually similar product in the catalog by a photo-query
 We could separate the task into 2 main parts:
