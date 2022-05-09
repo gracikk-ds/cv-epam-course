@@ -128,8 +128,8 @@ class Runner(pl.LightningModule):
 
         logits, embeddings = self.model(images)
 
-        self.embeddings_train.append(embeddings)
-        self.targets_train.append(targets)
+        self.embeddings_train.append(embeddings.detach().cpu())
+        self.targets_train.append(targets.detach().cpu())
 
         # calculating classification loss
         clf_loss = self.criterion(logits, targets)
