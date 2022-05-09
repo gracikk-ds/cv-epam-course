@@ -1,9 +1,5 @@
 ## CV course
-The course includes 7 modules (4 mandatory + 3 optional) which cover the essential problems of Computer Vision Sphere.
-
-### Course Goal
-The goal of the course is to take a new knowledge of the following CV topics:
-Image processing, Image classification, Object detection, Segmentation and Metric Learning.
+The course includes 7 modules which cover the essential problems of Computer Vision Sphere.
 
 ### Agenda
 Module 1: [Image processing](https://github.com/gracikk-ds/cv-epam-course/tree/main/Module%201.%20Image%20processing)  
