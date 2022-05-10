@@ -13,6 +13,16 @@ RUN mkdir /training/data/processed/dataset
 RUN tar -xf /training/data/processed/dataset.tar -C /training/data/processed/dataset --strip-components 1
 RUN rm /training/data/processed/dataset.tar
 
+# setting working dir
+WORKDIR /training
+
+# copy dependencies
+COPY pyproject.toml /training/pyproject.toml
+COPY poetry.lock /training/poetry.lock
+
+RUN poetry config virtualenvs.create false
+RUN poetry install
+
 # copy model folder
 COPY models /training/models
 
@@ -21,16 +31,6 @@ COPY logs /training/logs
 
 # copy trainer module
 COPY src /training/src
-
-# copy dependencies
-COPY pyproject.toml /training/pyproject.toml
-COPY poetry.lock /training/poetry.lock
-
-# setting working dir
-WORKDIR /training
-
-RUN poetry config virtualenvs.create false
-RUN poetry install
 
 # setting working dir
 WORKDIR /training/src
