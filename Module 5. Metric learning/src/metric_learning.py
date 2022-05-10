@@ -50,6 +50,58 @@ class EmbeddingsModel(nn.Module):
         return logits, emb
 
 
+def get_embeddings(trainer, loader):
+    embeddings = trainer.predict(dataloaders=loader, ckpt_path="best")
+
+    embs = []
+    targets = []
+    for element in embeddings:
+        emb, target = element
+        embs.append(emb)
+        targets.append(target)
+
+    embeddings, targets = torch.concat(embs), torch.concat(targets)
+    return embeddings.cpu(), targets.cpu()
+
+
+def sampling(embeddings, targets, N):
+    """
+    stratified sampling to speed up validation
+    :param embeddings: full embeddings
+    :param targets: full targets
+    :param N: number of samples to save per class
+    :return: subsample of embeddings and targets
+    """
+    embeddings = embeddings.numpy()
+    targets = targets.numpy()
+    df = pd.DataFrame.from_records(data=embeddings)
+    df["target"] = targets
+    df = df.groupby("target", group_keys=False).apply(
+        lambda x: x.sample(min(len(x), N), random_state=42)
+    )
+    targets = df["target"].values
+    df.drop(columns=["target"], inplace=True)
+    embeddings = df.values
+
+    return torch.tensor(embeddings).contiguous(), torch.tensor(targets).contiguous()
+
+
+def calculate_accuracy(trainer, train_dl, val_dl):
+    embeddings_train, targets_train = get_embeddings(trainer, train_dl)
+    embeddings_val, targets_val = get_embeddings(trainer, val_dl)
+
+    embeddings_train, targets_train = sampling(embeddings_train, targets_train, 300)
+    embeddings_val, targets_val = sampling(embeddings_val, targets_val, 300)
+
+    accuracy_calculator = AccuracyCalculator(device=torch.device("cpu"))
+
+    accuracies = accuracy_calculator.get_accuracy(
+        embeddings_train, embeddings_val, targets_train, targets_val, False
+    )
+
+    return accuracies
+
+
 class Runner(pl.LightningModule):
     def __init__(
         self,
@@ -93,27 +145,6 @@ class Runner(pl.LightningModule):
         self.embeddings_val = []
         self.targets_train = []
         self.targets_val = []
-
-    @staticmethod
-    def sampling(embeddings, targets):
-        """
-        stratified sampling to speed up validation
-        :param embeddings: full embeddings
-        :param targets: full targets
-        :return: subsample of embeddings and targets
-        """
-        embeddings = embeddings.numpy()
-        targets = targets.numpy()
-        df = pd.DataFrame.from_records(data=embeddings)
-        df["target"] = targets
-        df = df.groupby("target", group_keys=False).apply(
-            lambda x: x.sample(min(len(x), 300), random_state=42)
-        )
-        targets = df["target"].values
-        df.drop(columns=["target"], inplace=True)
-        embeddings = df.values
-
-        return torch.tensor(embeddings), torch.tensor(targets)
 
     def predict_step(self, batch, batch_idx, **kwargs):
         images, targets = batch
@@ -218,24 +249,19 @@ class Runner(pl.LightningModule):
         embeddings_scaled = scaler.fit_transform(embeddings)
         print("     done!")
 
-        print("     down-grade number of obj-s")
-        plot_df = pd.DataFrame.from_records(data=embeddings_scaled)
-        plot_df["target"] = targets
-        plot_df = plot_df.groupby("target", group_keys=False).apply(
-            lambda x: x.sample(min(len(x), 50), random_state=42)
+        print("     sampling")
+        embeddings_scaled, targets = sampling(
+            torch.tensor(embeddings_scaled), torch.tensor(targets), 50
         )
-        targets = plot_df["target"].values
-        plot_df.drop(columns=["target"], inplace=True)
-        print(plot_df.head())
         print("     done!")
 
         print("     starting umap transforms")
         umap_obj = umap.UMAP(n_neighbors=20, min_dist=0.15)
-        embedding_2d = umap_obj.fit_transform(plot_df.values)
+        embedding_2d = umap_obj.fit_transform(embeddings_scaled.numpy())
         print("     done!")
 
         plot_df = pd.DataFrame.from_records(data=embedding_2d, columns=["x", "y"])
-        plot_df["target"] = targets
+        plot_df["target"] = targets.numpy()
         plot_df["target"] = plot_df["target"].apply(lambda x: self.mapper[x])
 
         plt.figure(figsize=(14, 10))
@@ -260,15 +286,15 @@ class Runner(pl.LightningModule):
             self.targets_train = torch.concat(self.targets_train)
             self.embeddings_val = torch.concat(self.embeddings_val)
             self.targets_val = torch.concat(self.targets_val)
-            print("embedding example", self.embeddings_train[0])
+            print("embedding example", self.embeddings_train[0][:10])
             print("embeddings train shape: ", self.embeddings_train.shape)
             print("embeddings val shape: ", self.embeddings_val.shape)
 
-            self.embeddings_train, self.targets_train = self.sampling(
-                self.embeddings_train, self.targets_train
+            self.embeddings_train, self.targets_train = sampling(
+                self.embeddings_train, self.targets_train, 300
             )
-            self.embeddings_val, self.targets_val = self.sampling(
-                self.embeddings_val, self.targets_val
+            self.embeddings_val, self.targets_val = sampling(
+                self.embeddings_val, self.targets_val, 300
             )
 
             # embeddings metrices
@@ -322,53 +348,3 @@ class Runner(pl.LightningModule):
             "optimizer": optimizer,
             "lr_scheduler": {"scheduler": scheduler},
         }
-
-
-def get_embeddings(trainer, loader):
-    embeddings = trainer.predict(dataloaders=loader, ckpt_path="best")
-
-    embs = []
-    targets = []
-    for element in embeddings:
-        emb, target = element
-        embs.append(emb)
-        targets.append(target)
-
-    embeddings, targets = torch.concat(embs), torch.concat(targets)
-    return embeddings, targets
-
-
-def calculate_accuracy(trainer, train_dl, val_dl):
-    embeddings_train, targets_train = get_embeddings(trainer, train_dl)
-    embeddings_val, targets_val = get_embeddings(trainer, val_dl)
-
-    embeddings_train = embeddings_train.cpu().numpy()
-    embeddings_val = embeddings_val.cpu().numpy()
-    targets_val = targets_val.cpu().numpy()
-    targets_train = targets_train.cpu().numpy()
-
-    df_train = pd.DataFrame.from_records(data=embeddings_train)
-    df_train["target"] = targets_train
-    df_train = df_train.groupby("target", group_keys=False).apply(
-        lambda x: x.sample(min(len(x), 300), random_state=42)
-    )
-    targets_train = df_train["target"].values
-    df_train.drop(columns=["target"], inplace=True)
-    embeddings_train = df_train.values
-
-    df_val = pd.DataFrame.from_records(data=embeddings_val)
-    df_val["target"] = targets_val
-    df_val = df_val.groupby("target", group_keys=False).apply(
-        lambda x: x.sample(min(len(x), 300), random_state=42)
-    )
-    targets_val = df_val["target"].values
-    df_val.drop(columns=["target"], inplace=True)
-    embeddings_val = df_val.values
-
-    accuracy_calculator = AccuracyCalculator(device=torch.device("cpu"))
-
-    accuracies = accuracy_calculator.get_accuracy(
-        embeddings_train, embeddings_val, targets_train, targets_val, False
-    )
-
-    return accuracies
