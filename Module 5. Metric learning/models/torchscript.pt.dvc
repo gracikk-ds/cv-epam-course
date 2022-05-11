@@ -1,0 +1,4 @@
+outs:
+- md5: 4de18a494af85f76638611a59f3b2991
+  size: 352647022
+  path: torchscript.pt
