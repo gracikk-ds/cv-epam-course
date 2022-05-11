@@ -1,0 +1,30 @@
+stages:
+
+  prepare_data_train:
+    cmd: python scripts/make_dataset.py --flag "train" --root "data/raw/Stanford_Online_Products" --destination "data/interim/dataset"
+    deps:
+      - data/raw/Stanford_Online_Products
+    outs:
+      - data/interim/dataset/train
+
+  prepare_data_test:
+    cmd: python scripts/make_dataset.py --flag "test" --root "data/raw/Stanford_Online_Products" --destination "data/interim/dataset"
+    deps:
+      - data/raw/Stanford_Online_Products
+    outs:
+      - data/interim/dataset/test
+
+  dataset_stats_visualization:
+    cmd: python scripts/dataset_statistics.py --dataset_folder "data/interim/dataset"
+    deps:
+      - data/raw/Stanford_Online_Products
+    outs:
+      - data/interim/dataset/test
+
+  generate_processed_file:
+    cmd: COPYFILE_DISABLE=1 tar -cf data/processed/dataset.tar data/interim/dataset/
+    deps:
+      - data/interim/dataset/train
+      - data/interim/dataset/test
+    outs:
+      - data/processed/dataset.tar
