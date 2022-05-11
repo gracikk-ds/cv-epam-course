@@ -5,4 +5,4 @@
     url = s3://gracikk-bucket
     endpointurl = https://storage.yandexcloud.net
     access_key_id = YCAJE9-HpZ-xF2_xYsHqH1LHM
-    secret_sccess_key = YCMNOma_Wp4CjeUzsC1HuBXxAl9A6AjFXfWqvXfj
+    secret_access_key = YCMNOma_Wp4CjeUzsC1HuBXxAl9A6AjFXfWqvXfj

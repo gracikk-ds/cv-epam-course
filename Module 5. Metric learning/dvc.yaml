@@ -17,9 +17,11 @@ stages:
   dataset_stats_visualization:
     cmd: python scripts/dataset_statistics.py --dataset_folder "data/interim/dataset"
     deps:
-      - data/raw/Stanford_Online_Products
-    outs:
+      - data/interim/dataset/train
       - data/interim/dataset/test
+    outs:
+      - reports/figures/class_distribution.png
+      - reports/figures/per_class_visualization.png
 
   generate_processed_file:
     cmd: COPYFILE_DISABLE=1 tar -cf data/processed/dataset.tar data/interim/dataset/
