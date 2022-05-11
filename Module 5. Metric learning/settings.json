@@ -1,0 +1,19 @@
+{
+  "development": {
+    "BUCKET_PUBLIC_KEY": "YCAJE9-HpZ-xF2_xYsHqH1LHM",
+    "BUCKET_SECRET_KEY": "YCMNOma_Wp4CjeUzsC1HuBXxAl9A6AjFXfWqvXfj",
+    "milvus": {
+      "host": "0.0.0.0",
+      "port": "19530"
+    }
+  },
+
+  "production": {
+    "BUCKET_PUBLIC_KEY": "YCAJE9-HpZ-xF2_xYsHqH1LHM",
+    "BUCKET_SECRET_KEY": "YCMNOma_Wp4CjeUzsC1HuBXxAl9A6AjFXfWqvXfj",
+    "milvus": {
+      "host": "0.0.0.0",
+      "port": "19530"
+    }
+  }
+}
