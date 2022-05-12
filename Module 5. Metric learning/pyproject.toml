@@ -25,23 +25,8 @@ llvmlite = "^0.38.0"
 dvc = {extras = ["s3"], version = "^2.10.2"}
 
 [tool.poetry.dev-dependencies]
-
-# [tool.black]
-# line-length = 79
-# target-version = ['py36', 'py37', 'py38']
-# include = '\.pyi?$'
-# extend-exclude = '''
-# /(
-#   # The following are specific to Black, you probably don't want those.
-#   | blib2to3
-#   | tests/data
-#   | profiling
-# )/
-# '''
-# # We use preview style for formatting Black itself. If you
-# # want stable formatting across releases, you should keep
-# # this off.
-# preview = true
+flake8 = "4.0.1"
+black = "22.3.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
