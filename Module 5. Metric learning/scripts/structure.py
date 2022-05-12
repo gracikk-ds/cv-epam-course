@@ -80,6 +80,7 @@ def is_not_hidden(path):
     return not (cond_1 or cond_2)
 
 
-paths = DisplayablePath.make_tree(Path("./"), criteria=is_not_hidden)
-for path in paths:
-    print(path.displayable())
+if __name__ == "__main__":
+    paths = DisplayablePath.make_tree(Path("../"), criteria=is_not_hidden)
+    for path in paths:
+        print(path.displayable())
