@@ -1,6 +1,6 @@
 # Metric Learning
 
-###  Main things to know:  
+###  Main things to know:
 - [Lecture 1](https://www.youtube.com/watch?v=aU9yEwgrJ54) - highly recommended
 - [Lecture 2](https://www.youtube.com/watch?v=bvcC4hXaIJY)
 - [Lecture 3](https://www.youtube.com/watch?v=mr9njs6dess) - highly recommended
@@ -67,6 +67,24 @@ To train the model we used The Stanford Online Products dataset. You could downl
 │   ├── task.py
 │   └── transformations.py
 └── structure.py
+```
+
+## Run docker to train the model
+To up docker container run the following command inside current directory:
+
+```bash
+docker build . -t grac20101/aleksandr-gordeev:metric-learning \
+  --build-arg USER_ID=$(id -u) \
+  --build-arg GROUP_ID=123
+```
+
+```bash
+docker run -d --gpus all --shm-size=16GB \
+    --name mlearning \
+    --mount type=bind,source="$(pwd)"/logs,target=/training/logs \
+    --mount type=bind,source="$(pwd)"/models,target=/training/models \
+    --mount type=bind,source="$(pwd)"/data,target=/training/data \
+  grac20101/aleksandr-gordeev:metric-learning
 ```
 
 ## Conda + Poetry usage

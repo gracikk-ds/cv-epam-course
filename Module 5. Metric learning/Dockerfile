@@ -1,38 +1,31 @@
-FROM pytorch/pytorch:1.11.0-cuda11.3-cudnn8-runtime
+FROM pytorch/pytorch:1.11.0-cuda11.2-cudnn8-runtime
 
 RUN pip install -U pip
 RUN pip install poetry
 
-RUN mkdir /training
-
-# copy processed data
-COPY data/processed/dataset.tar /training/data/processed/dataset.tar
-
-# extract it
-RUN mkdir /training/data/processed/dataset
-RUN tar -xf /training/data/processed/dataset.tar -C /training/data/processed/dataset --strip-components 1
-RUN rm /training/data/processed/dataset.tar
+ARG USER_ID
+ARG GROUP_ID
+RUN addgroup --gid $GROUP_ID mlearning
+RUN useradd -r --no-log-init --uid $USER_ID -g mlearning mlearning
 
 # setting working dir
 WORKDIR /training
 
+# make dirs
+RUN mkdir logs models data
+
 # copy dependencies
 COPY pyproject.toml /training/pyproject.toml
-COPY poetry.lock /training/poetry.lock
 
 RUN poetry config virtualenvs.create false
-RUN poetry install
-
-# copy model folder
-COPY models /training/models
-
-# copy logs folder
-COPY logs /training/logs
+RUN poetry install --no-dev
 
 # copy trainer module
 COPY src /training/src
 
 # setting working dir
 WORKDIR /training/src
+
+# USER mlearning
 
 ENTRYPOINT ["python", "task.py"]

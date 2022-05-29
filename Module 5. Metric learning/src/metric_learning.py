@@ -96,7 +96,7 @@ def calculate_accuracy(trainer, train_dl, val_dl):
     accuracy_calculator = AccuracyCalculator(device=torch.device("cpu"))
 
     accuracies = accuracy_calculator.get_accuracy(
-        embeddings_train, embeddings_val, targets_train, targets_val, False
+        embeddings_val, embeddings_train, targets_val, targets_train, False
     )
 
     return accuracies
@@ -122,7 +122,7 @@ class Runner(pl.LightningModule):
         self.criterion = CrossEntropyLoss()
         self.metric_coeff = metric_coeff
         self.miner = miners.MultiSimilarityMiner(epsilon=0.1)
-        self.metric_loss = losses.SubCenterArcFaceLoss(  # ArcFaceLoss
+        self.metric_loss = losses.ArcFaceLoss(
             num_classes=len(classes), embedding_size=model.embedding_size
         ).to(torch.device("cuda"))
 
@@ -286,9 +286,9 @@ class Runner(pl.LightningModule):
             self.targets_train = torch.concat(self.targets_train)
             self.embeddings_val = torch.concat(self.embeddings_val)
             self.targets_val = torch.concat(self.targets_val)
-            print("embedding example", self.embeddings_train[0][:10])
-            print("embeddings train shape: ", self.embeddings_train.shape)
-            print("embeddings val shape: ", self.embeddings_val.shape)
+            # print("embedding example", self.embeddings_train[0][:10])
+            # print("embeddings train shape: ", self.embeddings_train.shape)
+            # print("embeddings val shape: ", self.embeddings_val.shape)
 
             self.embeddings_train, self.targets_train = sampling(
                 self.embeddings_train, self.targets_train, 300
@@ -300,10 +300,10 @@ class Runner(pl.LightningModule):
             # embeddings metrices
             print("accuracy_calculator start")
             accuracies = self.accuracy_calculator.get_accuracy(
-                self.embeddings_train,
                 self.embeddings_val,
-                self.targets_train,
+                self.embeddings_train,
                 self.targets_val,
+                self.targets_train,
                 False,
             )
             print("done!")

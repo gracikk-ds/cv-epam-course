@@ -5,7 +5,8 @@ description = "Train metric learning model"
 authors = ["gordeev.al <aleksandr_gordeev2@epam.com>"]
 
 [tool.poetry.dependencies]
-python = ">=3.7,<3.11"
+# python = ">=3.7,<3.11"
+python = ">=3.8"
 timm = "0.5.4"
 click = "^8.1.2"
 tqdm = "^4.64.0"
@@ -21,8 +22,8 @@ torchmetrics = "0.7.3"
 albumentations = "^1.1.0"
 pytorch-lightning = "1.5.10"
 pytorch-metric-learning = "1.2.1"
-llvmlite = "^0.38.0"
-dvc = {extras = ["s3"], version = "^2.10.2"}
+# llvmlite = "^0.38.0"
+# dvc = {extras = ["s3"], version = "^2.10.2"}
 
 [tool.poetry.dev-dependencies]
 flake8 = "4.0.1"

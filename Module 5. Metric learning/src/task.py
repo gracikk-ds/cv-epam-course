@@ -27,14 +27,10 @@ BACKBONE = "resnext101_32x8d"
 
 
 @click.command()
-@click.option(
-    "--dataset_folder",
-    help="path to processed.",
-    default="/training/data/processed/dataset",
-)
-@click.option("--tb_log_dir", help="GCS path to tb_dir.", default="/training/logs/")
-@click.option("--model_dir", help="GCS path to model_dir.", default="/training/models/")
-@click.option("--max_epochs", default=15)
+@click.option("--dataset_folder", help="path to processed.", default="/training/data")
+@click.option("--tb_log_dir", help="path to tb_dir.", default="/training/logs/")
+@click.option("--model_dir", help="path to model_dir.", default="/training/models/")
+@click.option("--max_epochs", default=30)
 def main(
     dataset_folder: str,
     tb_log_dir: str,
