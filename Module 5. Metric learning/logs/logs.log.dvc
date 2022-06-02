@@ -1,0 +1,4 @@
+outs:
+- md5: 36ddde2aae613b17aede79c5afeed379
+  size: 10250
+  path: logs.log
