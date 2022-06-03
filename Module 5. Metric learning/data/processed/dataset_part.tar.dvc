@@ -1,0 +1,4 @@
+outs:
+- md5: 41c9ec5cfcd21879259b092c661a1e62
+  size: 48258560
+  path: dataset_part.tar
