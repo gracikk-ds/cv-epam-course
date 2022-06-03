@@ -120,13 +120,9 @@ def main(
             )
             logger.info("data loaders were created")
 
-            assert val_dataset.classes == train_dataset.classes
-
             logger.info("creating runner")
             runner = Runner(
-                model=EmbeddingsModel(
-                    num_classes=len(classes_train), backbone=BACKBONE
-                ),
+                model=EmbeddingsModel(backbone=BACKBONE),
                 classes=train_dataset.classes,
                 lr=1e-3,
                 scheduler_T=max_epochs,  # * len(train_dl),
@@ -150,16 +146,16 @@ def main(
             )
             logger.info("trainer was created!")
 
-            # find learning rate
-            logger.info("Run learning rate finder")
-            lr_finder = trainer.tuner.lr_find(runner, train_dl)
+            #             # find learning rate
+            #             logger.info("Run learning rate finder")
+            #             lr_finder = trainer.tuner.lr_find(runner, train_dl)
 
-            # Pick point based on plot, or get suggestion
-            new_lr = lr_finder.suggestion()
+            #             # Pick point based on plot, or get suggestion
+            #             new_lr = lr_finder.suggestion()
 
-            # update hparams of the model
-            runner.hparams.lr = new_lr
-            logger.info("Done!")
+            #             # update hparams of the model
+            #             runner.hparams.lr = new_lr
+            #             logger.info("Done!")
 
             logger.info("run training pipeline")
             trainer.fit(runner, train_dl, val_dl)

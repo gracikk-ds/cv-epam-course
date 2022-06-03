@@ -15,7 +15,6 @@ from pytorch_metric_learning import losses, miners
 from sklearn.model_selection import train_test_split
 from pytorch_metric_learning.utils.accuracy_calculator import AccuracyCalculator
 
-
 BATCH_SIZE = 32
 
 
@@ -63,12 +62,11 @@ def sampling(embeddings, targets, N, umap=True):
     :param umap: sampling for umap or not
     :return: subsample of embeddings and targets
     """
-    embeddings = embeddings.numpy()
-    targets = targets.numpy()
-    df = pd.DataFrame.from_records(data=embeddings)
-    df["target"] = targets
 
     if umap:
+        df = pd.DataFrame.from_records(data=embeddings)
+        df["target"] = targets
+
         df = df.groupby("target", group_keys=False).apply(
             lambda x: x.sample(min(len(x), N), random_state=42)
         )
@@ -76,8 +74,13 @@ def sampling(embeddings, targets, N, umap=True):
         df.drop(columns=["target"], inplace=True)
         embeddings = df.values
 
-        return torch.tensor(embeddings).contiguous(), torch.tensor(targets).contiguous()
+        return embeddings, targets
     else:
+        embeddings = embeddings.numpy()
+        targets = targets.numpy()
+        df = pd.DataFrame.from_records(data=embeddings)
+        df["target"] = targets
+
         frame = pd.DataFrame(df.loc[:, ["target"]].value_counts().reset_index())
         frame.columns = ["target", "count"]
         classes_to_test = frame.loc[frame["count"] >= 4].target.values[:N]
@@ -95,7 +98,6 @@ def sampling(embeddings, targets, N, umap=True):
             test_size=0.5,
             stratify=df["target"].values,
         )
-
         embeddings_gallery = torch.tensor(embeddings_train).contiguous()
         embeddings_query = torch.tensor(embeddings_test).contiguous()
         targets_gallery = torch.tensor(targets_train).contiguous()
@@ -162,7 +164,7 @@ class Runner(pl.LightningModule):
         self.lr = lr
         self.scheduler_T = scheduler_T
         self.miner = miners.MultiSimilarityMiner(epsilon=0.1)
-        self.metric_loss = losses.SubCenterArcFaceLoss(
+        self.metric_loss = losses.ArcFaceLoss(
             num_classes=len(classes), embedding_size=model.embedding_size
         ).to(torch.device("cuda"))
 
@@ -199,18 +201,22 @@ class Runner(pl.LightningModule):
             batch_size=BATCH_SIZE,
         )
 
-        return {"loss": m_loss, "embeddings": embeddings, "targets": targets}
+        return {
+            "loss": m_loss,
+            "embeddings": embeddings.detach().cpu(),
+            "targets": targets.detach().cpu(),
+        }
 
     def training_epoch_end(self, training_epoch_outputs):
 
-        print(training_epoch_outputs.keys())
-        print(training_epoch_outputs["embeddings"].shape)
+        embeddings_train = []
+        targets_train = []
+        for output in training_epoch_outputs:
+            embeddings_train.append(output["embeddings"])
+            targets_train.append(output["targets"])
 
-        embeddings_train = training_epoch_outputs["embeddings"]
-        targets_train = training_epoch_outputs["targets"]
-
-        # embeddings_train = torch.concat(embeddings_train)
-        # targets_val = torch.concat(targets_val)
+        embeddings_train = torch.concat(embeddings_train)
+        targets_train = torch.concat(targets_train)
 
         (
             embeddings_gallery_train,
@@ -248,19 +254,25 @@ class Runner(pl.LightningModule):
             on_step=True,
             batch_size=BATCH_SIZE,
         )
-        return {"loss": m_loss, "embeddings": embeddings, "targets": targets}
+        return {
+            "loss": m_loss,
+            "embeddings": embeddings.detach().cpu(),
+            "targets": targets.detach().cpu(),
+        }
 
     def validation_epoch_end(self, validation_epoch_outputs) -> None:
 
-        print(validation_epoch_outputs.keys())
-        print(validation_epoch_outputs["embeddings"].shape)
+        embeddings_val = []
+        targets_val = []
+        for output in validation_epoch_outputs:
+            embeddings_val.append(output["embeddings"])
+            targets_val.append(output["targets"])
 
-        embeddings_val = validation_epoch_outputs["embeddings"]
-        targets_val = validation_epoch_outputs["targets"]
+        embeddings_val = torch.concat(embeddings_val)
+        targets_val = torch.concat(targets_val)
 
-        if len(embeddings_val) != 0:
-            # embeddings_val = torch.concat(embeddings_val)
-            # targets_val = torch.concat(targets_val)
+        if embeddings_val.shape[0] != 64:
+            print(embeddings_val.shape[0])
 
             (
                 embeddings_gallery_val,
@@ -293,8 +305,8 @@ class Runner(pl.LightningModule):
             )
 
     def log_umap(self, embeddings, targets):
+        targets = [self.mapper[x] for x in targets]
         targets = [x.split("_")[-1] for x in targets]
-        print(targets)
         print("run umap logger")
         sns.set(style="whitegrid", font_scale=1.3)
 
@@ -304,19 +316,17 @@ class Runner(pl.LightningModule):
         print("     done!")
 
         print("     sampling")
-        embeddings_scaled, targets = sampling(
-            torch.tensor(embeddings_scaled), torch.tensor(targets), 50
-        )
+        embeddings_scaled, targets = sampling(embeddings_scaled, targets, 50)
         print("     done!")
 
         print("     starting umap transforms")
         umap_obj = umap.UMAP(n_neighbors=20, min_dist=0.15)
-        embedding_2d = umap_obj.fit_transform(embeddings_scaled.numpy())
+        embedding_2d = umap_obj.fit_transform(embeddings_scaled)
         print("     done!")
 
         plot_df = pd.DataFrame.from_records(data=embedding_2d, columns=["x", "y"])
-        plot_df["target"] = targets.numpy()
-        plot_df["target"] = plot_df["target"].apply(lambda x: self.mapper[x])
+        plot_df["target"] = targets
+        # plot_df["target"] = plot_df["target"].apply(lambda x: self.mapper[x])
 
         plt.figure(figsize=(14, 10))
         plt.title("UMAP")
