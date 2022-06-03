@@ -97,7 +97,7 @@ def main(
             logger.info("creating data loaders")
             sampler = MPerClassSampler(
                 train_dataset.targets,
-                m=3,
+                m=2,
                 length_before_new_iter=len(train_dataset),
             )
 
@@ -146,9 +146,6 @@ def main(
                         verbose=True,
                         filename="checkpoint-{epoch:02d}",
                     ),
-                    EarlyStopping(
-                        patience=10, monitor="Validation/accuracy", mode="max"
-                    ),
                 ],
             )
             logger.info("trainer was created!")
@@ -182,12 +179,15 @@ def main(
         drop_last=False,
     )
 
-    accuracy = calculate_accuracy(
+    accuracies_train, accuracies_test = calculate_accuracy(
         trainer=trainer, train_dl=train_dl_clean, val_dl=val_dl
     )
 
-    with open(str(tb_log_dir_to_use / "accuracy.pickle"), "wb") as handle:
-        pickle.dump(accuracy, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    with open(str(tb_log_dir_to_use / "accuracy_train.pickle"), "wb") as handle:
+        pickle.dump(accuracies_train, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    with open(str(tb_log_dir_to_use / "accuracy_test.pickle"), "wb") as handle:
+        pickle.dump(accuracies_test, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     # save the model
     runner.model.eval()

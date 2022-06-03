@@ -10,10 +10,9 @@ import torch.nn as nn
 from typing import Tuple
 import pytorch_lightning as pl
 from matplotlib import pyplot as plt
-from torch.nn import CrossEntropyLoss
 from sklearn.preprocessing import StandardScaler
-from torchmetrics import Accuracy, ConfusionMatrix
 from pytorch_metric_learning import losses, miners
+from sklearn.model_selection import train_test_split
 from pytorch_metric_learning.utils.accuracy_calculator import AccuracyCalculator
 
 
@@ -23,7 +22,6 @@ BATCH_SIZE = 32
 class EmbeddingsModel(nn.Module):
     def __init__(
         self,
-        num_classes: int,
         embedding_size: int = 512,
         backbone: str = "resnext101_32x8d",
     ):
@@ -36,18 +34,10 @@ class EmbeddingsModel(nn.Module):
             bias=False,
         )
 
-        self.classifier = torch.nn.Sequential(
-            nn.Linear(embedding_size, num_classes, bias=True),
-        )
-
     def forward(self, inpt):
         # get embeddings
         emb = self.trunk(inpt)
-
-        # get logits
-        logits = self.classifier(emb)
-
-        return logits, emb
+        return emb
 
 
 def get_embeddings(trainer, loader):
@@ -64,42 +54,95 @@ def get_embeddings(trainer, loader):
     return embeddings.cpu(), targets.cpu()
 
 
-def sampling(embeddings, targets, N):
+def sampling(embeddings, targets, N, umap=True):
     """
     stratified sampling to speed up validation
     :param embeddings: full embeddings
     :param targets: full targets
     :param N: number of samples to save per class
+    :param umap: sampling for umap or not
     :return: subsample of embeddings and targets
     """
     embeddings = embeddings.numpy()
     targets = targets.numpy()
     df = pd.DataFrame.from_records(data=embeddings)
     df["target"] = targets
-    df = df.groupby("target", group_keys=False).apply(
-        lambda x: x.sample(min(len(x), N), random_state=42)
-    )
-    targets = df["target"].values
-    df.drop(columns=["target"], inplace=True)
-    embeddings = df.values
 
-    return torch.tensor(embeddings).contiguous(), torch.tensor(targets).contiguous()
+    if umap:
+        df = df.groupby("target", group_keys=False).apply(
+            lambda x: x.sample(min(len(x), N), random_state=42)
+        )
+        targets = df["target"].values
+        df.drop(columns=["target"], inplace=True)
+        embeddings = df.values
+
+        return torch.tensor(embeddings).contiguous(), torch.tensor(targets).contiguous()
+    else:
+        frame = pd.DataFrame(df.loc[:, ["target"]].value_counts().reset_index())
+        frame.columns = ["target", "count"]
+        classes_to_test = frame.loc[frame["count"] >= 4].target.values[:N]
+
+        df = df.loc[df["target"].isin(classes_to_test)]
+
+        (
+            embeddings_train,
+            embeddings_test,
+            targets_train,
+            targets_test,
+        ) = train_test_split(
+            df.drop(columns=["target"]).values,
+            df["target"].values,
+            test_size=0.5,
+            stratify=df["target"].values,
+        )
+
+        embeddings_gallery = torch.tensor(embeddings_train).contiguous()
+        embeddings_query = torch.tensor(embeddings_test).contiguous()
+        targets_gallery = torch.tensor(targets_train).contiguous()
+        targets_query = torch.tensor(targets_test).contiguous()
+
+        return embeddings_gallery, embeddings_query, targets_gallery, targets_query
 
 
 def calculate_accuracy(trainer, train_dl, val_dl):
     embeddings_train, targets_train = get_embeddings(trainer, train_dl)
     embeddings_val, targets_val = get_embeddings(trainer, val_dl)
 
-    embeddings_train, targets_train = sampling(embeddings_train, targets_train, 300)
-    embeddings_val, targets_val = sampling(embeddings_val, targets_val, 300)
+    (
+        embeddings_gallery_train,
+        embeddings_query_train,
+        targets_gallery_train,
+        targets_query_train,
+    ) = sampling(embeddings_train, targets_train, 300, umap=False)
 
-    accuracy_calculator = AccuracyCalculator(device=torch.device("cpu"))
+    (
+        embeddings_gallery_val,
+        embeddings_query_val,
+        targets_gallery_val,
+        targets_query_val,
+    ) = sampling(embeddings_val, targets_val, 300, umap=False)
 
-    accuracies = accuracy_calculator.get_accuracy(
-        embeddings_val, embeddings_train, targets_val, targets_train, False
+    accuracy_calculator_train = AccuracyCalculator(device=torch.device("cpu"))
+
+    accuracies_train = accuracy_calculator_train.get_accuracy(
+        embeddings_query_train,
+        embeddings_gallery_train,
+        targets_query_train,
+        targets_gallery_train,
+        False,
     )
 
-    return accuracies
+    accuracy_calculator_test = AccuracyCalculator(device=torch.device("cpu"))
+
+    accuracies_test = accuracy_calculator_test.get_accuracy(
+        embeddings_query_val,
+        embeddings_gallery_val,
+        targets_query_val,
+        targets_gallery_val,
+        False,
+    )
+
+    return accuracies_train, accuracies_test
 
 
 class Runner(pl.LightningModule):
@@ -110,7 +153,6 @@ class Runner(pl.LightningModule):
         mapper,
         lr: float = 1e-3,
         scheduler_T=1000,
-        metric_coeff: float = 0.3,
     ) -> None:
 
         super().__init__()
@@ -119,61 +161,29 @@ class Runner(pl.LightningModule):
         self.classes = classes
         self.lr = lr
         self.scheduler_T = scheduler_T
-        self.criterion = CrossEntropyLoss()
-        self.metric_coeff = metric_coeff
         self.miner = miners.MultiSimilarityMiner(epsilon=0.1)
-        self.metric_loss = losses.ArcFaceLoss(
+        self.metric_loss = losses.SubCenterArcFaceLoss(
             num_classes=len(classes), embedding_size=model.embedding_size
         ).to(torch.device("cuda"))
 
-        num_classes = len(self.classes)
         self.mapper = mapper
 
-        self.metrics = torch.nn.ModuleDict(
-            {
-                "accuracy": Accuracy(
-                    num_classes=num_classes, compute_on_step=False, average="macro"
-                ),
-                "confusion_matrix": ConfusionMatrix(
-                    num_classes=num_classes, normalize="true", compute_on_step=False
-                ),
-            }
-        )
         self.accuracy_calculator = AccuracyCalculator(device=torch.device("cpu"))
-
-        self.embeddings_train = []
-        self.embeddings_val = []
-        self.targets_train = []
-        self.targets_val = []
 
     def predict_step(self, batch, batch_idx, **kwargs):
         images, targets = batch
-        logits, embeddings = self.model(images)
+        embeddings = self.model(images)
         return embeddings, targets
 
-    def training_step(
-        self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx
-    ) -> torch.Tensor:
+    def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx):
 
         images, targets = batch
 
-        logits, embeddings = self.model(images)
-
-        self.embeddings_train.append(embeddings.detach().cpu())
-        self.targets_train.append(targets.detach().cpu())
-
-        # calculating classification loss
-        clf_loss = self.criterion(logits, targets)
+        embeddings = self.model(images)
 
         # calculating metric loss
         hard_pairs = self.miner(embeddings, targets)
         m_loss = self.metric_loss(embeddings, targets, hard_pairs)
-
-        loss = self.metric_coeff * clf_loss + (1 - self.metric_coeff) * m_loss
-
-        # calculating metrics
-        for i, metric in enumerate(self.metrics.values()):
-            metric.update(logits.softmax(axis=1), targets)
 
         self.log(
             "Train/Metric Loss",
@@ -181,12 +191,7 @@ class Runner(pl.LightningModule):
             on_step=True,
             batch_size=BATCH_SIZE,
         )
-        self.log(
-            "Train/Classification Loss",
-            clf_loss.item(),
-            on_step=True,
-            batch_size=BATCH_SIZE,
-        )
+
         self.log(
             "Train/LR",
             self.lr_schedulers().get_last_lr()[0],
@@ -194,53 +199,102 @@ class Runner(pl.LightningModule):
             batch_size=BATCH_SIZE,
         )
 
-        return loss
+        return {"loss": m_loss, "embeddings": embeddings, "targets": targets}
 
-    def validation_step(
-        self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx
-    ) -> torch.Tensor:
+    def training_epoch_end(self, training_epoch_outputs):
+
+        print(training_epoch_outputs.keys())
+        print(training_epoch_outputs["embeddings"].shape)
+
+        embeddings_train = training_epoch_outputs["embeddings"]
+        targets_train = training_epoch_outputs["targets"]
+
+        # embeddings_train = torch.concat(embeddings_train)
+        # targets_val = torch.concat(targets_val)
+
+        (
+            embeddings_gallery_train,
+            embeddings_query_train,
+            targets_gallery_train,
+            targets_query_train,
+        ) = sampling(embeddings_train, targets_train, 300, umap=False)
+
+        accuracy_calculator_train = AccuracyCalculator(device=torch.device("cpu"))
+
+        accuracies_train = accuracy_calculator_train.get_accuracy(
+            embeddings_query_train,
+            embeddings_gallery_train,
+            targets_query_train,
+            targets_gallery_train,
+            False,
+        )
+
+        for name in accuracies_train:
+            self.log(
+                f"Train/{name}", accuracies_train[name], on_step=False, on_epoch=True
+            )
+
+    def validation_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx):
 
         images, targets = batch
-        logits, embeddings = self.model(images)
-        self.embeddings_val.append(embeddings.detach().cpu())
-        self.targets_val.append(targets.detach().cpu())
+        embeddings = self.model(images)
 
-        clf_loss = self.criterion(logits, targets)
-
-        # calculating metrics
-        for i, metric in enumerate(self.metrics.values()):
-            metric.update(logits.softmax(axis=1), targets)
+        hard_pairs = self.miner(embeddings, targets)
+        m_loss = self.metric_loss(embeddings, targets, hard_pairs)
 
         self.log(
-            "Validation/Classification Loss",
-            clf_loss.item(),
+            "Validation/Metric learning Loss",
+            m_loss.item(),
             on_step=True,
             batch_size=BATCH_SIZE,
         )
-        return clf_loss
+        return {"loss": m_loss, "embeddings": embeddings, "targets": targets}
 
-    def log_cm(self, confusion_matrix):
-        print("start drawing conf matrix")
-        plt.figure(figsize=(50, 50))
-        sns.heatmap(
-            np.around(confusion_matrix.cpu().numpy(), 3),
-            annot=True,
-            cmap="YlGnBu",
-            xticklabels=self.classes,
-            yticklabels=self.classes,
-        )
-        buf = io.BytesIO()
-        plt.savefig(buf)
-        buf.seek(0)
-        image = np.array(Image.open(buf))[:, :, :3]
-        buf.close()
-        plt.clf()
-        self.logger.experiment.add_image(
-            "conf_matr", image, self.current_epoch, dataformats="HWC"
-        )
-        print("done!")
+    def validation_epoch_end(self, validation_epoch_outputs) -> None:
+
+        print(validation_epoch_outputs.keys())
+        print(validation_epoch_outputs["embeddings"].shape)
+
+        embeddings_val = validation_epoch_outputs["embeddings"]
+        targets_val = validation_epoch_outputs["targets"]
+
+        if len(embeddings_val) != 0:
+            # embeddings_val = torch.concat(embeddings_val)
+            # targets_val = torch.concat(targets_val)
+
+            (
+                embeddings_gallery_val,
+                embeddings_query_val,
+                targets_gallery_val,
+                targets_query_val,
+            ) = sampling(embeddings_val, targets_val, 300, umap=False)
+
+            accuracy_calculator_test = AccuracyCalculator(device=torch.device("cpu"))
+
+            accuracies_test = accuracy_calculator_test.get_accuracy(
+                embeddings_query_val,
+                embeddings_gallery_val,
+                targets_query_val,
+                targets_gallery_val,
+                False,
+            )
+
+            for name in accuracies_test:
+                self.log(
+                    f"Validation/{name}",
+                    accuracies_test[name],
+                    on_step=False,
+                    on_epoch=True,
+                )
+
+            self.log_umap(
+                embeddings=embeddings_val.numpy(),
+                targets=targets_val.numpy(),
+            )
 
     def log_umap(self, embeddings, targets):
+        targets = [x.split("_")[-1] for x in targets]
+        print(targets)
         print("run umap logger")
         sns.set(style="whitegrid", font_scale=1.3)
 
@@ -278,60 +332,6 @@ class Runner(pl.LightningModule):
             "umap", image, self.current_epoch, dataformats="HWC"
         )
         print("done!")
-
-    def validation_epoch_end(self, outputs) -> None:
-
-        if len(self.embeddings_train) != 0:
-            self.embeddings_train = torch.concat(self.embeddings_train)
-            self.targets_train = torch.concat(self.targets_train)
-            self.embeddings_val = torch.concat(self.embeddings_val)
-            self.targets_val = torch.concat(self.targets_val)
-            # print("embedding example", self.embeddings_train[0][:10])
-            # print("embeddings train shape: ", self.embeddings_train.shape)
-            # print("embeddings val shape: ", self.embeddings_val.shape)
-
-            self.embeddings_train, self.targets_train = sampling(
-                self.embeddings_train, self.targets_train, 300
-            )
-            self.embeddings_val, self.targets_val = sampling(
-                self.embeddings_val, self.targets_val, 300
-            )
-
-            # embeddings metrices
-            print("accuracy_calculator start")
-            accuracies = self.accuracy_calculator.get_accuracy(
-                self.embeddings_val,
-                self.embeddings_train,
-                self.targets_val,
-                self.targets_train,
-                False,
-            )
-            print("done!")
-
-            for name in accuracies:
-                self.log(
-                    f"Validation/{name}", accuracies[name], on_step=False, on_epoch=True
-                )
-
-            self.log_umap(
-                embeddings=self.embeddings_val.numpy(),
-                targets=self.targets_val.numpy(),
-            )
-
-            self.embeddings_train = []
-            self.embeddings_val = []
-            self.targets_train = []
-            self.targets_val = []
-
-        # classification metrices
-        for name, metric in self.metrics.items():
-            metric_val = metric.compute()
-            self.log(f"Validation/{name}", metric_val, on_step=False, on_epoch=True)
-            metric.reset()
-            if name != "confusion_matrix":
-                print(f"Validation {name} = {metric_val}")
-            else:
-                self.log_cm(metric_val)
 
     def configure_optimizers(self):
         params = list(filter(lambda p: p.requires_grad, self.model.parameters()))
