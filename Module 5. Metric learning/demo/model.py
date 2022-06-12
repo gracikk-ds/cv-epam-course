@@ -1,5 +1,4 @@
 import timm
-import torch
 import numpy as np
 import torch.nn as nn
 import albumentations as albu
@@ -30,12 +29,11 @@ def transformation(img):
 class EmbeddingsModel(nn.Module):
     def __init__(
         self,
-        num_classes: int = 12,
         embedding_size: int = 512,
         backbone: str = "resnext101_32x8d",
     ):
         super().__init__()
-        self.trunk = timm.create_model(backbone, pretrained=False)
+        self.trunk = timm.create_model(backbone, pretrained=True)
         self.embedding_size = embedding_size
         self.trunk.fc = nn.Linear(
             in_features=self.trunk.fc.in_features,
@@ -43,15 +41,7 @@ class EmbeddingsModel(nn.Module):
             bias=False,
         )
 
-        self.classifier = torch.nn.Sequential(
-            nn.Linear(embedding_size, num_classes, bias=True),
-        )
-
     def forward(self, inpt):
         # get embeddings
         emb = self.trunk(inpt)
-
-        # get logits
-        logits = self.classifier(emb)
-
-        return logits, emb
+        return emb

@@ -1,13 +1,17 @@
+import sys
 import click
 import torch
 import pickle
 import numpy as np
 from tqdm import tqdm
 from pathlib import Path
-from transformations import Transforms
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
 from sklearn.preprocessing import StandardScaler
+
+
+sys.path.append(str(Path(__file__).parent.parent.resolve()))
+from transformations import Transforms
 
 
 BATCH_SIZE = 32
@@ -20,7 +24,7 @@ def get_embeddings(model, dataloader):
     with torch.no_grad():
         for i, (x, y) in enumerate(tqdm(dataloader)):
             classes.extend(y.numpy())
-            _, embeddings_tmp = model(x)
+            embeddings_tmp = model(x)
             embeddings_tmp = list(embeddings_tmp)
             embeddings.extend(embeddings_tmp)
     classes = np.array(classes)
@@ -33,13 +37,13 @@ def get_embeddings(model, dataloader):
 @click.option(
     "--dataset_folder",
     help="path to processed dataset folder.",
-    default="../data/interim/dataset_part",
+    default="../../data/processed/dataset_part",
 )
 def create_embeddings(dataset_folder: str):
     dataset_folder_to_use = Path(dataset_folder)
 
     # initialize the model
-    model = torch.jit.load("../models/torchscript.pt")
+    model = torch.jit.load("../../models/torchscript.pt")
 
     train_dataset = ImageFolder(
         root=str(dataset_folder_to_use / "train"),
@@ -88,10 +92,10 @@ def create_embeddings(dataset_folder: str):
         embeddings_val.tolist(),
     ]
 
-    with open("../data/results/embeddings_train.pickle", "wb") as handle:
+    with open("../../data/results/embeddings_train.pickle", "wb") as handle:
         pickle.dump(data_train, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-    with open("../data/results/embeddings_test.pickle", "wb") as handle:
+    with open("../../data/results/embeddings_test.pickle", "wb") as handle:
         pickle.dump(data_test, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 

@@ -14,6 +14,7 @@ from pymilvus import (
     DataType,
     Collection,
     utility,
+    drop_collection,
 )
 
 
@@ -27,7 +28,7 @@ def milvus_add_collection(
     collection_name: str = "demo_metric",
 ):
     connections.connect(host=host, port=port)
-
+    drop_collection(collection_name="demo_metric")
     # Does collection demo_metric exist in Milvus?
     has = utility.has_collection(collection_name)
     print("Collection status: ", has)
@@ -98,14 +99,15 @@ def run():
         start = time.process_time()
 
         embedding = predict(image)
-        result, path = milvus_search([embedding])
-        img_path = Path("../data/interim/dataset_part/train/") / result[0] / path
-        img = np.array(Image.open(img_path))
-        fig = draw_objects(image, img, result[0])
-        st.pyplot(fig=fig)
+        results, paths = milvus_search([embedding])
+        for result, path in zip(results, paths):
+            img_path = Path("../data/processed/dataset_part/train/") / result / path
+            img = np.array(Image.open(img_path))
+            fig = draw_objects(image, img, result)
+            st.pyplot(fig=fig)
 
-        end = time.process_time()
-        st.text(f"Model running time: {end - start: 2f} s")
+            end = time.process_time()
+            st.text(f"Model running time: {end - start: 2f} s")
 
     elif run_button and image is None:
         st.write("Image is not selected.")

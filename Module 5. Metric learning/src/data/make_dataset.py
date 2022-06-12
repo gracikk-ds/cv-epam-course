@@ -4,7 +4,7 @@ from tqdm import tqdm
 from pathlib import Path
 
 test_paths = [x for x in Path("../../data/interim/dataset_part/test").rglob("*.JPG")]
-
+print(test_paths)
 train_paths = [x for x in Path("../../data/interim/dataset_part/train").rglob("*.JPG")]
 
 

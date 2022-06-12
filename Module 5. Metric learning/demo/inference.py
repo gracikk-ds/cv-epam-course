@@ -40,7 +40,7 @@ def predict(image):
 
     model.eval()
     with torch.no_grad():
-        _, embedding = model(image.float())
+        embedding = model(image.float())
         embedding = embedding.squeeze().numpy()
 
     with open("./pickles/normalizer.pickle", "rb") as handle:
@@ -90,8 +90,8 @@ def milvus_search(
     result_dsts_top = [element.distances for element in results]
 
     pathes = pd.read_csv("./pickles/data_pathes.csv")
+    result_ids[0] = [int(x) for x in result_ids[0]]
     pathes = pathes.iloc[result_ids[0]]
-    print(pathes)
 
     concat_df = pd.DataFrame(index=range(len(np.array(result_ids).T[0])))
     for i in range(len(np.array(result_ids).T)):
@@ -99,27 +99,23 @@ def milvus_search(
             maping_df.iloc[np.array(result_ids).T[i]].reset_index().loc[:, ["label_id"]]
         )
         concat_df = pd.concat([concat_df, df], axis=1)
-    concat_df["result"] = concat_df.mode(axis=1)[0].values.astype(int)
-    predictions_label_id = concat_df.loc[:, "result"].values.astype(int)
-    indexes = [
-        i
-        for i, e in enumerate(list(concat_df.values[0][:-1]))
-        if e == predictions_label_id[0]
-    ]
-    dist_mean = np.array(result_dsts_top[0])[indexes].mean()
+
+    print(concat_df)
+    # concat_df["result"] = concat_df.mode(axis=1)[0].values.astype(int)
+    predictions_label_id = concat_df.iloc[0, :].values.astype(int)
 
     with open("./pickles/mapper_faces.pickle", "rb") as handle:
         mapper_dict = pickle.load(handle)
-    print(dist_mean)
-    if dist_mean <= 2:
 
-        predictions = [
-            remap_it(class_id, mapper_dict, decode=True)
-            for class_id in predictions_label_id
-        ]
-        pathes = pathes.loc[pathes["classes_names"] == predictions[0], "paths"].values
+    predictions = [
+        remap_it(class_id, mapper_dict, decode=True)
+        for class_id in predictions_label_id
+    ]
 
-    else:
-        predictions = ["unknown"]
+    pathes = pathes.loc[pathes["classes_names"].isin(predictions), "paths"].values
 
-    return predictions, pathes[0]
+    print(predictions)
+    print(result_dsts_top[0])
+    print(pathes)
+
+    return predictions, pathes
